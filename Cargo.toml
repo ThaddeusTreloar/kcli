@@ -1,0 +1,15 @@
+[package]
+name = "kafka-cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.13", features = ["derive"] }
+dirs = "5.0.1"
+error-stack = { version = "0.5.0", features = ["anyhow"] }
+inquire = "0.7.5"
+log = "0.4.22"
+serde = { version = "1.0.210", features = ["derive"] }
+simplelog = "0.12.2"
+thiserror = "1.0.64"
+toml = "0.8.19"

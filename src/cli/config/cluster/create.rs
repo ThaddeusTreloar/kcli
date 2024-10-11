@@ -1,6 +1,6 @@
 use std::{fs::File, net::{SocketAddr, ToSocketAddrs}};
 
-use clap::Args;
+use clap::{Args, ValueHint};
 use dirs::home_dir;
 use error_stack::{Report, ResultExt};
 
@@ -10,11 +10,11 @@ const BOOTSTRAP_SERVERS_PROMPT: &str = "Add bootstrap server (Press enter to fin
 
 #[derive(Debug, Args)]
 pub (super) struct CreateCluster {
-    #[arg(short, long)]
+    #[arg(short, long, help = "Logical name for the cluster.")]
     name: String,
-    #[arg(short, long, value_delimiter = ',')]
+    #[arg(short, long, value_delimiter = ',', value_hint = ValueHint::Hostname, help = "A list of bootstrap servers. Can be comma delimited or multiple invocations.")]
     bootstrap_servers: Vec<String>,
-    #[arg(long)]
+    #[arg(long, help = "Refuse user input.")]
     no_input: bool,
 }
 

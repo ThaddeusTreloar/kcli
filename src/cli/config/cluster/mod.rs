@@ -5,6 +5,7 @@ use error_stack::ResultExt;
 use crate::error::cli::ExecutionError;
 
 mod create;
+mod delete;
 
 #[derive(Args, Debug)]
 pub(super) struct ClusterCommand {
@@ -14,7 +15,9 @@ pub(super) struct ClusterCommand {
 
 #[derive(Debug, Subcommand)]
 enum ClusterSubCommand {
+    #[command(about = "Create a kcli cluster configurations")]
     Create(CreateCluster),
+    #[command(about = "Delete a kcli cluster configuration")]
     Delete{
         #[arg(short, long, default_value = "")]
         cluster: String,

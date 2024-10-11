@@ -1,4 +1,5 @@
 use acl::AclCommand;
+use completions::CompletionsCommand;
 use config::ConfigCommand;
 use consumer::ConsumerCommand;
 use group::GroupCommand;
@@ -7,9 +8,10 @@ use clap::{Parser, Subcommand};
 use producer::ProducerCommand;
 use topic::TopicCommand;
 
-use crate::error::cli::ExecutionError;
+use crate::{error::cli::ExecutionError, io::Output};
 
 mod acl;
+mod completions;
 mod config;
 mod consumer;
 mod group;
@@ -18,20 +20,32 @@ mod topic;
 mod util;
 
 #[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[command(version, about, long_about = None, author)]
 pub (crate) struct Cli {
     #[command(subcommand)]
     command: RootCommand,
+    #[arg(long, global=true, help = "Set log level to 'INFO'.")]
+    verbose: bool,
+    #[arg(long, global=true, default_value = "human", help = "Output format for commands.")]
+    out: Output,
 }
 
 #[derive(Subcommand, Debug)]
 enum RootCommand {
+    #[command(about = "Manage Kafka ACLS")]
     Acl(AclCommand),
+    #[command(about = "Manage kcli configurations")]
     Config(ConfigCommand),
+    #[command(about = "Consumer messages from a topic")]
     Consumer(ConsumerCommand),
+    #[command(about = "Manage Kafka consumer group")]
     Group(GroupCommand),
+    #[command(about = "Produce messages to a topic")]
     Producer(ProducerCommand),
+    #[command(about = "Manage Kafka topics")]
     Topic(TopicCommand),
+    #[command(about = "Print out shell completions")]
+    Completions(CompletionsCommand),
 }
 /*
 kafka-broker-api-versions.sh  
@@ -70,6 +84,7 @@ impl Cli {
             RootCommand::Group(command) => command.execute(),
             RootCommand::Producer(command) => command.execute(),
             RootCommand::Topic(command) => command.execute(),
+            RootCommand::Completions(command) => command.execute(),
         }
     }
 }

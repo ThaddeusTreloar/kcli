@@ -17,9 +17,12 @@ pub(super) struct ConfigCommand {
 
 #[derive(Subcommand, Debug)]
 enum ConfigSubCommand {
+    #[command(about = "Manager kcli cluster configurations")]
     Cluster(ClusterCommand),
+    #[command(about = "Manager kcli schema registry configurations")]
     Registry(RegistryCommand),
-    Profile(ProfileCommand)
+    #[command(about = "Manager kcli profile configurations")]
+    Profile(ProfileCommand),
 }
 
 impl ConfigCommand {

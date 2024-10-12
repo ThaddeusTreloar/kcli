@@ -1,5 +1,4 @@
-use clap::{Args, Subcommand};
-use inquire::{InquireError, Select};
+use clap::Args;
 
 #[derive(Args, Debug)]
 pub(super) struct RegistryCommand {

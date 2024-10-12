@@ -1,11 +1,21 @@
 use clap::{Args, Subcommand};
-use create::CreateCluster;
+use add::AddCluster;
+use describe::DescribeCluster;
 use error_stack::ResultExt;
+use list::ListCluster;
+use remove::RemoveCluster;
+use default::DefaultCluster;
+use set::SetCluster;
 
-use crate::error::cli::ExecutionError;
+use crate::{cli::Invoke, config::Context, error::cli::ExecutionError};
 
-mod create;
-mod delete;
+mod add;
+mod describe;
+mod list;
+mod remove;
+mod default;
+mod set;
+mod util;
 
 #[derive(Args, Debug)]
 pub(super) struct ClusterCommand {
@@ -16,21 +26,36 @@ pub(super) struct ClusterCommand {
 #[derive(Debug, Subcommand)]
 enum ClusterSubCommand {
     #[command(about = "Create a kcli cluster configurations")]
-    Create(CreateCluster),
+    Add(AddCluster),
     #[command(about = "Delete a kcli cluster configuration")]
-    Delete{
-        #[arg(short, long, default_value = "")]
-        cluster: String,
-    },
+    Remove(RemoveCluster),
+    #[command(about = "Set properties for a cluster configuration")]
+    Set(SetCluster),
+    #[command(about = "List cluster configurations")]
+    Describe(DescribeCluster),
+    #[command(about = "List cluster configurations")]
+    List(ListCluster),
+    #[command(about = "List cluster configurations")]
+    Default(DefaultCluster),
 }
 
-impl ClusterCommand {
-    pub(super) fn execute(self) -> error_stack::Result<(), ExecutionError> {
-        match self.command {
-            ClusterSubCommand::Create(command) => command.execute()
-                .change_context(ExecutionError::ExecutionFailed("config cluster create")),
+impl Invoke for ClusterCommand {
+    type E = ExecutionError;
 
-            ClusterSubCommand::Delete { cluster } => todo!("Cluster delete")
+    fn invoke(self, ctx: Context) -> error_stack::Result<(), ExecutionError> {
+        match self.command {
+            ClusterSubCommand::Add(command) => command.invoke(ctx)
+                .change_context(ExecutionError::ExecutionFailed("config cluster create")),
+            ClusterSubCommand::Remove(command) => command.invoke(ctx)
+                .change_context(ExecutionError::ExecutionFailed("config cluster remove")),
+            ClusterSubCommand::Set(command) => command.invoke(ctx)
+                .change_context(ExecutionError::ExecutionFailed("config cluster set")),
+            ClusterSubCommand::Describe(command) => command.invoke(ctx)
+                .change_context(ExecutionError::ExecutionFailed("config cluster describe")),
+            ClusterSubCommand::List(command) => command.invoke(ctx)
+                .change_context(ExecutionError::ExecutionFailed("config cluster list")),
+            ClusterSubCommand::Default(command) => command.invoke(ctx)
+                .change_context(ExecutionError::ExecutionFailed("config cluster list")),
         }
     }
 }

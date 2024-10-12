@@ -1,1 +1,1 @@
-pub (crate) mod cluster;
+pub mod cluster;

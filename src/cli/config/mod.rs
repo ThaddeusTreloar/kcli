@@ -3,7 +3,9 @@ use cluster::ClusterCommand;
 use profile::ProfileCommand;
 use registry::RegistryCommand;
 
-use crate::error::cli::ExecutionError;
+use crate::{config::Context, error::cli::ExecutionError};
+
+use super::Invoke;
 
 mod cluster;
 mod profile;
@@ -25,10 +27,12 @@ enum ConfigSubCommand {
     Profile(ProfileCommand),
 }
 
-impl ConfigCommand {
-    pub(super) fn execute(self) -> error_stack::Result<(), ExecutionError> {
+impl Invoke for ConfigCommand {
+    type E = ExecutionError;
+
+    fn invoke(self, ctx: Context) -> error_stack::Result<(), ExecutionError> {
         match self.command {
-            ConfigSubCommand::Cluster(command) => command.execute(),
+            ConfigSubCommand::Cluster(command) => command.invoke(ctx),
             ConfigSubCommand::Registry(_) => todo!("Profile"),
             ConfigSubCommand::Profile(_) => todo!("Profile"),
         }

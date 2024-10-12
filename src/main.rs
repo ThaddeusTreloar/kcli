@@ -1,7 +1,8 @@
-use clap::{CommandFactory, Parser};
-use clap_complete::{generate, generate_to, Shell};
-use cli::Cli;
-use config::init_config;
+use std::process::exit;
+
+use clap::Parser;
+use cli::{Cli, Invoke};
+use config::Context;
 use error::handle_expect_report;
 use util::init_logging;
 
@@ -14,7 +15,13 @@ mod util;
 fn main() {
     init_logging();
 
-    let _ = init_config().inspect_err(handle_expect_report);
+    let ctx = match Context::init() {
+        Ok(ctx) => ctx,
+        Err(e) => {
+            handle_expect_report(&e);
+            exit(1);
+        },
+    };
 
-    let _ = Cli::parse().execute().inspect_err(handle_expect_report);
+    let _ = Cli::parse().invoke(ctx).inspect_err(handle_expect_report);
 }

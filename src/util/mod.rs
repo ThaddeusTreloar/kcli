@@ -1,7 +1,7 @@
-use simplelog::{ColorChoice, CombinedLogger, Config, ConfigBuilder, LevelFilter, TermLogger, TerminalMode};
+use simplelog::{ColorChoice, CombinedLogger, ConfigBuilder, LevelFilter, TermLogger, TerminalMode};
 
 
-pub(crate) fn init_logging() {
+pub fn init_logging() {
     let config = ConfigBuilder::new()
         .set_time_level(LevelFilter::Off)
         .build();

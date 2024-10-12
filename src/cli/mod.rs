@@ -2,13 +2,13 @@ use acl::AclCommand;
 use completions::CompletionsCommand;
 use config::ConfigCommand;
 use consumer::ConsumerCommand;
+use error_stack::ResultExt;
 use group::GroupCommand;
-use inquire::{error::InquireError, Select};
 use clap::{Parser, Subcommand};
 use producer::ProducerCommand;
 use topic::TopicCommand;
 
-use crate::{error::cli::ExecutionError, io::Output};
+use crate::{config::Context, error::cli::ExecutionError, io::output::Output};
 
 mod acl;
 mod completions;
@@ -17,16 +17,16 @@ mod consumer;
 mod group;
 mod producer;
 mod topic;
-mod util;
+pub mod util;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None, author)]
-pub (crate) struct Cli {
+pub struct Cli {
     #[command(subcommand)]
     command: RootCommand,
     #[arg(long, global=true, help = "Set log level to 'INFO'.")]
     verbose: bool,
-    #[arg(long, global=true, default_value = "human", help = "Output format for commands.")]
+    #[arg(long, global=true, default_value_t, help = "Output format for commands.")]
     out: Output,
 }
 
@@ -37,11 +37,11 @@ enum RootCommand {
     #[command(about = "Manage kcli configurations")]
     Config(ConfigCommand),
     #[command(about = "Consumer messages from a topic")]
-    Consumer(ConsumerCommand),
+    Consume(ConsumerCommand),
     #[command(about = "Manage Kafka consumer group")]
     Group(GroupCommand),
     #[command(about = "Produce messages to a topic")]
-    Producer(ProducerCommand),
+    Produce(ProducerCommand),
     #[command(about = "Manage Kafka topics")]
     Topic(TopicCommand),
     #[command(about = "Print out shell completions")]
@@ -75,14 +75,23 @@ kafka-verifiable-consumer.sh
 kafka-verifiable-producer.sh
 */
 
-impl Cli {
-    pub (crate) fn execute(self) -> error_stack::Result<(), ExecutionError> {
+pub trait Invoke {
+    type E: std::error::Error;
+
+    fn invoke(self, ctx: Context) -> error_stack::Result<(), Self::E>;
+}
+
+impl Invoke for Cli {
+    type E = ExecutionError;
+
+    fn invoke(self, ctx: Context) -> error_stack::Result<(), ExecutionError> {
         match self.command {
             RootCommand::Acl(command) => command.execute(),
-            RootCommand::Config(command) => command.execute(),
-            RootCommand::Consumer(command) => command.execute(),
+            RootCommand::Config(command) => command.invoke(ctx),
+            RootCommand::Consume(command) => command.invoke(ctx)
+                .change_context(ExecutionError::ExecutionFailed("consume")),
             RootCommand::Group(command) => command.execute(),
-            RootCommand::Producer(command) => command.execute(),
+            RootCommand::Produce(command) => command.execute(),
             RootCommand::Topic(command) => command.execute(),
             RootCommand::Completions(command) => command.execute(),
         }

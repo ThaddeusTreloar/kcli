@@ -1,9 +1,4 @@
 use serde::{Deserialize, Serialize};
 
-
-
-
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct SaslSsl {
-    
-}
+pub struct SaslSsl {}

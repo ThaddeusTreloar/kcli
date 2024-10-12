@@ -1,26 +1,26 @@
-use clap::{Args, Subcommand};
 use add::AddCluster;
+use clap::{Args, Subcommand};
+use default::DefaultCluster;
 use describe::DescribeCluster;
 use error_stack::ResultExt;
 use list::ListCluster;
 use remove::RemoveCluster;
-use default::DefaultCluster;
 use set::SetCluster;
 
 use crate::{cli::Invoke, config::Context, error::cli::ExecutionError};
 
 mod add;
+mod default;
 mod describe;
 mod list;
 mod remove;
-mod default;
 mod set;
 mod util;
 
 #[derive(Args, Debug)]
 pub(super) struct ClusterCommand {
     #[command(subcommand)]
-    command: ClusterSubCommand
+    command: ClusterSubCommand,
 }
 
 #[derive(Debug, Subcommand)]
@@ -44,17 +44,23 @@ impl Invoke for ClusterCommand {
 
     fn invoke(self, ctx: Context) -> error_stack::Result<(), ExecutionError> {
         match self.command {
-            ClusterSubCommand::Add(command) => command.invoke(ctx)
+            ClusterSubCommand::Add(command) => command
+                .invoke(ctx)
                 .change_context(ExecutionError::ExecutionFailed("config cluster create")),
-            ClusterSubCommand::Remove(command) => command.invoke(ctx)
+            ClusterSubCommand::Remove(command) => command
+                .invoke(ctx)
                 .change_context(ExecutionError::ExecutionFailed("config cluster remove")),
-            ClusterSubCommand::Set(command) => command.invoke(ctx)
+            ClusterSubCommand::Set(command) => command
+                .invoke(ctx)
                 .change_context(ExecutionError::ExecutionFailed("config cluster set")),
-            ClusterSubCommand::Describe(command) => command.invoke(ctx)
+            ClusterSubCommand::Describe(command) => command
+                .invoke(ctx)
                 .change_context(ExecutionError::ExecutionFailed("config cluster describe")),
-            ClusterSubCommand::List(command) => command.invoke(ctx)
+            ClusterSubCommand::List(command) => command
+                .invoke(ctx)
                 .change_context(ExecutionError::ExecutionFailed("config cluster list")),
-            ClusterSubCommand::Default(command) => command.invoke(ctx)
+            ClusterSubCommand::Default(command) => command
+                .invoke(ctx)
                 .change_context(ExecutionError::ExecutionFailed("config cluster list")),
         }
     }

@@ -5,7 +5,10 @@ use sasl_plain::SaslPlain;
 use sasl_ssl::SaslSsl;
 use serde::{Deserialize, Serialize};
 
-use crate::{config::{FromUserInput, FromUserInputForVariant}, error::cli::util::UserInputError};
+use crate::{
+    config::{FromUserInput, FromUserInputForVariant},
+    error::cli::util::UserInputError,
+};
 
 pub mod sasl_plain;
 pub mod sasl_ssl;
@@ -30,7 +33,10 @@ impl FromUserInputForVariant for AuthType {
     type E = UserInputError;
     type V = AuthTypeNames;
 
-    fn from_user_input_for_variant(variant: Self::V) -> error_stack::Result<Self, Self::E> where Self: Sized {
+    fn from_user_input_for_variant(variant: Self::V) -> error_stack::Result<Self, Self::E>
+    where
+        Self: Sized,
+    {
         match variant {
             AuthTypeNames::Plain => Ok(Self::Plain),
             AuthTypeNames::SaslPlain => SaslPlain::from_user_input().map(AuthType::SaslPlain),

@@ -7,13 +7,22 @@ use super::Cli;
 
 #[derive(Args, Debug)]
 pub(super) struct CompletionsCommand {
-    #[arg(index=1, default_value = "zsh", help = "Target shell for completions")]
-    shell: Shell
+    #[arg(
+        index = 1,
+        default_value = "zsh",
+        help = "Target shell for completions"
+    )]
+    shell: Shell,
 }
 
 impl CompletionsCommand {
     pub(super) fn execute(self) -> error_stack::Result<(), ExecutionError> {
-        generate(self.shell, &mut Cli::command(), "kcli", &mut std::io::stdout());
+        generate(
+            self.shell,
+            &mut Cli::command(),
+            "kcli",
+            &mut std::io::stdout(),
+        );
 
         Ok(())
     }

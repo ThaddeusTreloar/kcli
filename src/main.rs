@@ -20,7 +20,7 @@ fn main() {
         Err(e) => {
             handle_expect_report(&e);
             exit(1);
-        },
+        }
     };
 
     let _ = Cli::parse().invoke(ctx).inspect_err(handle_expect_report);

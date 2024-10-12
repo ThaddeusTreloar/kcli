@@ -1,5 +1,4 @@
 use clap::Args;
-    
+
 #[derive(Args, Debug)]
-pub(super) struct ProfileCommand {
-}
+pub(super) struct ProfileCommand {}

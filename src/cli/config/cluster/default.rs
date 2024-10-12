@@ -1,11 +1,14 @@
-
 use clap::Args;
 use error_stack::{Report, ResultExt};
 
-use crate::{cli::Invoke, config::Context, error::cli::config::cluster::{ReadOnlyClusterError, WritableClusterError}};
+use crate::{
+    cli::Invoke,
+    config::{ConfigFile, Context},
+    error::cli::config::cluster::WritableClusterError,
+};
 
 #[derive(Debug, Args)]
-pub (super) struct DefaultCluster {
+pub(super) struct DefaultCluster {
     #[arg(index = 1, help = "Logical name for the cluster.")]
     name: Option<String>,
 }
@@ -24,7 +27,7 @@ impl Invoke for DefaultCluster {
                     None => println!("No default cluster set."),
                 }
 
-                return Ok(())
+                return Ok(());
             }
         };
 
@@ -33,7 +36,8 @@ impl Invoke for DefaultCluster {
         } else {
             ctx.clusters_mut().set_default(&name);
 
-            ctx.clusters().write_out()
+            ctx.clusters()
+                .write_out()
                 .change_context(WritableClusterError::WriteError)?;
 
             println!("Set '{}' as default cluster.", name);

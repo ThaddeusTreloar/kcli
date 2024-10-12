@@ -16,16 +16,15 @@ pub enum Output {
 }
 
 impl Output {
-    pub fn write_as_string<T>(&self, value: &T) -> error_stack::Result<String, OutputError> 
-    where T: Serialize
+    pub fn write_as_string<T>(&self, value: &T) -> error_stack::Result<String, OutputError>
+    where
+        T: Serialize,
     {
         match self {
             Self::Human => ron::ser::to_string_pretty(value, PrettyConfig::default())
                 .change_context(OutputError::Serialise),
-            Self::Json => serde_json::to_string(value)
-                .change_context(OutputError::Serialise),
-            Self::Yaml => serde_yml::to_string(value)
-                .change_context(OutputError::Serialise),
+            Self::Json => serde_json::to_string(value).change_context(OutputError::Serialise),
+            Self::Yaml => serde_yml::to_string(value).change_context(OutputError::Serialise),
         }
     }
 }
@@ -54,11 +53,7 @@ impl FromStr for Output {
 
 impl ValueEnum for Output {
     fn value_variants<'a>() -> &'a [Self] {
-        &[
-            Output::Human,
-            Output::Json,
-            Output::Yaml,
-        ]
+        &[Output::Human, Output::Json, Output::Yaml]
     }
 
     fn to_possible_value(&self) -> Option<PossibleValue> {

@@ -1,4 +1,3 @@
-
 #[derive(Debug, thiserror::Error)]
 pub enum OutputError {
     #[error("Failed to serialise object.")]

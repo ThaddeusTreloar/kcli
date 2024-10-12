@@ -1,7 +1,5 @@
-
-
 #[derive(Debug, thiserror::Error)]
-pub enum ClusterConfigIoError {
+pub enum ConfigIoError {
     #[error("Failed to read config from file: {0}")]
     Read(String),
     #[error("Failed to write config to file: {0}")]

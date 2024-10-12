@@ -14,12 +14,13 @@ pub struct SaslPlain {
 impl FromUserInput for SaslPlain {
     type E = UserInputError;
 
-    fn from_user_input() -> error_stack::Result<Self, Self::E> where Self: Sized {
+    fn from_user_input() -> error_stack::Result<Self, Self::E>
+    where
+        Self: Sized,
+    {
         let username = get_user_input(GET_USERNAME_PROMPT)?;
         let password = get_user_input(GET_PASSWORD_PROMPT)?;
 
-        Ok(
-            Self { username, password }
-        )
+        Ok(Self { username, password })
     }
 }

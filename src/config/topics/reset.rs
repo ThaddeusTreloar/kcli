@@ -1,8 +1,9 @@
 use std::{fmt::Display, str::FromStr};
 
 use clap::{builder::PossibleValue, ValueEnum};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum ResetStrategy {
     Beginning,
     Earliest,

@@ -1,5 +1,3 @@
-
-
 #[derive(Debug, thiserror::Error)]
 pub enum AddClusterError {
     #[error("A cluster with the name: {0}, already exists.")]

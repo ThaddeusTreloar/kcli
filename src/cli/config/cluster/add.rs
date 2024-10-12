@@ -1,7 +1,20 @@
 use clap::{Args, ValueHint};
 use error_stack::{Report, ResultExt};
 
-use crate::{cli::{util::{get_user_input_confirmation, get_user_input_vec}, Invoke}, config::{clusters::{auth::{AuthType, AuthTypeNames}, ClusterConfig}, Context, FromUserInputForVariant}, error::cli::config::cluster::{AddClusterError, WritableClusterError}};
+use crate::{
+    cli::{
+        util::{get_user_input_confirmation, get_user_input_vec},
+        Invoke,
+    },
+    config::{
+        clusters::{
+            auth::{AuthType, AuthTypeNames},
+            ClusterConfig,
+        },
+        ConfigFile, Context, FromUserInputForVariant,
+    },
+    error::cli::config::cluster::{AddClusterError, WritableClusterError},
+};
 
 use super::util::validate_servers;
 
@@ -9,7 +22,7 @@ const BOOTSTRAP_SERVERS_PROMPT: &str = "Add bootstrap server (Press enter to fin
 const SET_DEFAULT_PROMPT: &str = "No default set, set this cluster as default?";
 
 #[derive(Debug, Args)]
-pub (super) struct AddCluster {
+pub(super) struct AddCluster {
     #[arg(index = 1, help = "Logical name for the cluster.")]
     name: String,
     #[arg(short, long, value_delimiter = ',', value_hint = ValueHint::Hostname, help = "A list of bootstrap servers. Can be comma delimited or multiple invocations.")]
@@ -24,11 +37,16 @@ impl Invoke for AddCluster {
     type E = AddClusterError;
 
     fn invoke(self, mut ctx: Context) -> error_stack::Result<(), AddClusterError> {
-        let Self { name, mut bootstrap_servers, no_input, auth } = self;
+        let Self {
+            name,
+            mut bootstrap_servers,
+            no_input,
+            auth,
+        } = self;
 
-        if ctx.clusters().contains_cluster_config(&name) 
+        if ctx.clusters().contains_cluster_config(&name)
             && !get_user_input_confirmation("Cluster config exists, do you want to replace it?")
-                    .change_context(AddClusterError::InputError("replace cluster"))? 
+                .change_context(AddClusterError::InputError("replace cluster"))?
         {
             return Err(Report::new(AddClusterError::AlreadyExists(name)));
         }
@@ -39,7 +57,7 @@ impl Invoke for AddCluster {
             } else {
                 bootstrap_servers.extend(
                     get_user_input_vec(BOOTSTRAP_SERVERS_PROMPT)
-                        .change_context(AddClusterError::InputError("bootstrap_servers"))?
+                        .change_context(AddClusterError::InputError("bootstrap_servers"))?,
                 );
             }
         }
@@ -67,7 +85,8 @@ impl Invoke for AddCluster {
             }
         }
 
-        ctx.clusters().write_out()
+        ctx.clusters()
+            .write_out()
             .change_context(AddClusterError::WriteError)
     }
 }

@@ -15,14 +15,13 @@ pub enum Input {
 }
 
 impl Input {
-    pub fn write_as_string<T>(&self, value: &T) -> error_stack::Result<String, InputError> 
-    where T: Serialize
+    pub fn write_as_string<T>(&self, value: &T) -> error_stack::Result<String, InputError>
+    where
+        T: Serialize,
     {
         match self {
-            Self::Json => serde_json::to_string(value)
-                .change_context(InputError::Deserialise),
-            Self::Yaml => serde_yml::to_string(value)
-                .change_context(InputError::Deserialise),
+            Self::Json => serde_json::to_string(value).change_context(InputError::Deserialise),
+            Self::Yaml => serde_yml::to_string(value).change_context(InputError::Deserialise),
         }
     }
 }
@@ -51,10 +50,7 @@ impl FromStr for Input {
 
 impl ValueEnum for Input {
     fn value_variants<'a>() -> &'a [Self] {
-        &[
-            Input::Json,
-            Input::Yaml,
-        ]
+        &[Input::Json, Input::Yaml]
     }
 
     fn to_possible_value(&self) -> Option<PossibleValue> {

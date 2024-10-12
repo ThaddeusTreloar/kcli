@@ -6,6 +6,8 @@ pub enum ConsumerError {
     ClusterNotExists(String),
     #[error("Failed to get input for args: {0}")]
     InputError(&'static str),
+    #[error("Failed to write out config: {0}")]
+    WriteConfig(&'static str),
     #[error("Failed to create consumer.")]
     CreateConsumer,
     #[error("Consumer failed while reading.")]

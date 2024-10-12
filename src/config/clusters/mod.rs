@@ -1,105 +1,36 @@
-use std::{collections::HashMap, fs::{exists, File}, io::{Read, Write}};
+use std::{collections::HashMap, io::Read};
 
 use auth::AuthType;
 use error_stack::ResultExt;
-use log::{info, warn};
+use log::warn;
 use serde::{Deserialize, Serialize};
 
-use crate::error::config::{clusters::ClusterConfigIoError, InitContextError};
+use crate::error::config::clusters::ConfigIoError;
 
-use super::Context;
+use super::ConfigFile;
 
 pub mod auth;
 
-pub (super) const CLUSTER_CONFIG: &str = "clusters.toml";
+pub(super) const CLUSTER_CONFIG_FILE: &str = "clusters.toml";
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClustersConfig {
     default: Option<String>,
-    cluster_configs: HashMap<String, ClusterConfig>
+    cluster_configs: HashMap<String, ClusterConfig>,
+}
+
+impl Default for ClustersConfig {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ClustersConfig {
-    pub (super) fn new() -> Self {
-        ClustersConfig { default:None, cluster_configs: HashMap::new() }
-    }
-
-    pub (super) fn create_if_not_exists() -> error_stack::Result<Self, InitContextError> {
-        let cluster_config_path = Context::get_path_for_child(CLUSTER_CONFIG)
-            .change_context(InitContextError::CheckExistence(CLUSTER_CONFIG.to_owned()))?;
-        
-        let resolved_cluster_config_path = cluster_config_path.as_path();
-        
-        if !exists(resolved_cluster_config_path)
-            .change_context(InitContextError::CheckExistence(resolved_cluster_config_path.display().to_string()))? 
-        {
-            info!("Cluster config not found, creating at: {}", resolved_cluster_config_path.display());
-        
-            let mut file = File::create(resolved_cluster_config_path)
-                .change_context(InitContextError::CreateFile(resolved_cluster_config_path.display().to_string()))?;
-        
-            let config = ClustersConfig::new();
-        
-            let toml_content = toml::to_string(&config)
-                .change_context(InitContextError::WriteFile(resolved_cluster_config_path.display().to_string()))?;
-        
-            file.write_all(toml_content.as_bytes())
-                .change_context(InitContextError::WriteFile(resolved_cluster_config_path.display().to_string()))?;
-
-            Ok(config)
-        } else {
-            ClustersConfig::read_in()
-                .change_context(InitContextError::ReadFile(resolved_cluster_config_path.display().to_string()))
+    pub(super) fn new() -> Self {
+        ClustersConfig {
+            default: None,
+            cluster_configs: HashMap::new(),
         }
-    }
-
-    pub fn clean(mut self) -> error_stack::Result<Self, ClusterConfigIoError>{
-        if self.default().is_some() && self.get_default().is_none() {
-            warn!("Default cluster '{}' does not exists. Unsetting default", self.default().expect("Unexpected error."));
-
-            self.unset_default();
-            self.write_out()
-                .change_context(ClusterConfigIoError::Write("during config clean.".to_string()))
-                .map(|_| self)
-        } else {
-            Ok(self)
-        }
-    }
-
-    pub fn read_in() -> error_stack::Result<Self, ClusterConfigIoError> {
-        let config_path = Context::get_path_for_child(CLUSTER_CONFIG)
-            .change_context(ClusterConfigIoError::Read(CLUSTER_CONFIG.to_owned()))?;
-
-        let resolved_config_path = config_path.as_path();
-
-        let mut config_file = File::open(resolved_config_path)
-            .change_context(ClusterConfigIoError::Read(resolved_config_path.display().to_string()))?;
-
-        let mut raw_config = String::new();
-
-        config_file.read_to_string(&mut raw_config)
-            .change_context(ClusterConfigIoError::Read(resolved_config_path.display().to_string()))?;
-
-        let config: Self = toml::from_str(&raw_config)
-            .change_context(ClusterConfigIoError::Parse)?;
-
-        config.clean()
-    }
-
-    pub fn write_out(&self) -> error_stack::Result<(), ClusterConfigIoError> {
-        let config_path = Context::get_path_for_child(CLUSTER_CONFIG)
-            .change_context(ClusterConfigIoError::Read(CLUSTER_CONFIG.to_owned()))?;
-
-        let resolved_config_path = config_path.as_path();
-
-        let mut config_file = File::create(resolved_config_path)
-            .change_context(ClusterConfigIoError::Read(resolved_config_path.display().to_string()))?;
-
-        let config_str = toml::to_string_pretty(self)
-            .change_context(ClusterConfigIoError::Parse)?;
-
-        config_file.write_all(config_str.as_bytes())
-            .change_context(ClusterConfigIoError::Write(resolved_config_path.display().to_string()))
     }
 
     pub fn default(&self) -> Option<&String> {
@@ -107,7 +38,16 @@ impl ClustersConfig {
     }
 
     pub fn get_default(&self) -> Option<&ClusterConfig> {
-        self.default().and_then(|c|self.cluster_config(c))
+        self.default().and_then(|c| self.cluster_config(c))
+    }
+
+    pub fn get_default_mut(&mut self) -> Option<&mut ClusterConfig> {
+        let default = match self.default() {
+            Some(default) => default.clone(),
+            None => None?,
+        };
+
+        self.cluster_config_mut(&default)
     }
 
     pub fn set_default(&mut self, cluster: &str) {
@@ -149,10 +89,33 @@ impl ClustersConfig {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+impl ConfigFile for ClustersConfig {
+    fn filename() -> &'static str {
+        CLUSTER_CONFIG_FILE
+    }
+
+    fn clean(mut self) -> error_stack::Result<Self, ConfigIoError> {
+        if self.default().is_some() && self.get_default().is_none() {
+            warn!(
+                "Default cluster '{}' does not exists. Unsetting default",
+                self.default().expect("Unexpected error.")
+            );
+
+            self.unset_default();
+            self.write_out()
+                .change_context(ConfigIoError::Write("during config clean.".to_string()))
+                .map(|_| self)
+        } else {
+            Ok(self)
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ClusterConfig {
     bootstrap_servers: Vec<String>,
     auth: Option<AuthType>,
+    topics: Vec<String>,
 }
 
 impl ClusterConfig {
@@ -160,6 +123,7 @@ impl ClusterConfig {
         Self {
             bootstrap_servers,
             auth: None,
+            topics: Vec::new(),
         }
     }
 
@@ -178,5 +142,20 @@ impl ClusterConfig {
     pub fn auth_mut(&mut self) -> &mut Option<AuthType> {
         &mut self.auth
     }
-}
 
+    pub fn topics(&self) -> &Vec<String> {
+        &self.topics
+    }
+
+    pub fn contains_topic(&self, topic: &String) -> bool {
+        self.topics.contains(topic)
+    }
+
+    pub fn add_topic(&mut self, topic: &str) {
+        self.topics.push(topic.to_owned());
+    }
+
+    pub fn remove_topic(&mut self, topic: &str) {
+        self.topics.push(topic.to_owned());
+    }
+}

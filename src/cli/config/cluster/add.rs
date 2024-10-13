@@ -11,7 +11,7 @@ use crate::{
             auth::{AuthType, AuthTypeNames},
             ClusterConfig,
         },
-        ConfigFile, Context, FromUserInputForVariant,
+        Context, FromUserInputForVariant,
     },
     error::cli::config::cluster::AddClusterError,
 };
@@ -36,7 +36,7 @@ pub(super) struct AddCluster {
 impl Invoke for AddCluster {
     type E = AddClusterError;
 
-    fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), AddClusterError> {
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), AddClusterError> {
         let Self {
             name,
             mut bootstrap_servers,

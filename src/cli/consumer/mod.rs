@@ -1,6 +1,6 @@
 use clap::Args;
-use error_stack::{Report, ResultExt};
-use log::{error, trace, warn};
+use error_stack::ResultExt;
+use log::trace;
 use rdkafka::{
     config::RDKafkaLogLevel,
     consumer::{BaseConsumer, Consumer},
@@ -8,7 +8,6 @@ use rdkafka::{
 };
 
 use crate::{
-    cli::util::get_user_choice,
     config::{
         clusters::NamedCluster,
         topics::{reset::ResetStrategy, TopicConfig},
@@ -20,7 +19,7 @@ use crate::{
 
 use super::Invoke;
 
-const REUSE_EXISTING_TOPIC_CONFIG: &str = "Found existing topic config, do you want to reuse?";
+const _REUSE_EXISTING_TOPIC_CONFIG: &str = "Found existing topic config, do you want to reuse?";
 
 #[derive(Args, Debug)]
 pub(super) struct ConsumerCommand {
@@ -41,7 +40,7 @@ pub(super) struct ConsumerCommand {
 impl Invoke for ConsumerCommand {
     type E = ConsumerError;
 
-    fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), ConsumerError> {
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), ConsumerError> {
         let Self {
             topic,
             cluster,

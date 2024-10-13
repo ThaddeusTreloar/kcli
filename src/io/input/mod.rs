@@ -2,7 +2,6 @@ use std::{fmt::Display, str::FromStr};
 
 use clap::{builder::PossibleValue, ValueEnum};
 use error_stack::ResultExt;
-use ron::ser::PrettyConfig;
 use serde::Serialize;
 
 use crate::error::io::InputError;

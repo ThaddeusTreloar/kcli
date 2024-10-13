@@ -1,7 +1,7 @@
 use std::{collections::HashMap, time::Duration};
 
 use clap::Args;
-use error_stack::ResultExt;
+use error_stack::{Report, ResultExt};
 use futures::executor;
 use rdkafka::{
     admin::{AdminClient, AdminOptions, OwnedResourceSpecifier, ResourceSpecifier}, client::DefaultClientContext, config::RDKafkaLogLevel, ClientConfig,
@@ -9,7 +9,7 @@ use rdkafka::{
 use regex::Regex;
 use serde::Serialize;
 use tabled::{
-    builder::Builder, grid::records::ExactRecords, settings::{Merge, Panel, Span, Style}, Table, Tabled
+    grid::records::ExactRecords, settings::{Panel, Style}, Table, Tabled
 };
 
 use crate::{
@@ -58,7 +58,7 @@ pub(super) struct DescribeTopic {
 impl Invoke for DescribeTopic {
     type E = ReadOnlyTopicError;
 
-    fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), ReadOnlyTopicError> {
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), ReadOnlyTopicError> {
         let Self {
             name,
             mut cluster,
@@ -67,6 +67,14 @@ impl Invoke for DescribeTopic {
             regex,
             exclude_internal,
         } = self;
+
+        let filters = format!(
+            "specific: '{}', exclude: '{}', include: '{}', regex: '{}'", 
+            name.as_ref().unwrap_or(&"None".to_owned()), 
+            exclude_prefix.as_ref().unwrap_or(&"None".to_owned()), 
+            include_prefix.as_ref().unwrap_or(&"None".to_owned()), 
+            regex.as_ref().unwrap_or(&"None".to_owned())
+        );
 
         let cluster_config = if let Some(cluster_name) = &cluster {
             ctx.clusters().cluster_config(cluster_name).ok_or(
@@ -103,31 +111,37 @@ impl Invoke for DescribeTopic {
         let is_internal_topic = |t: &str| internal_topic_regex.is_match(t);
 
         let exclude = exclude_prefix.is_some();
-        let exclude_prefix = exclude_prefix.unwrap_or("".to_owned());
+        let exclude_prefix_parse = exclude_prefix.unwrap_or("".to_owned());
 
         let include = include_prefix.is_some();
-        let include_prefix = include_prefix.unwrap_or("".to_owned());
+        let include_prefix_parsed = include_prefix.unwrap_or("".to_owned());
 
         let user_regex = match regex {
             None => None,
             Some(s) => Some(Regex::new(&s).change_context(ReadOnlyTopicError::CompileRegex(s))?),
         };
 
-        let mut table_builder = Builder::default();
-
-        let mut topics = metadata
+        let topics = metadata
             .topics()
             .iter()
             .map(|t|
                 (t.name(), t.partitions()))
-            .filter(|t| t.0.starts_with(&include_prefix) || !include)
-            .filter(|t| !t.0.starts_with(&exclude_prefix) || !exclude)
+            .filter(|t| t.0.starts_with(&include_prefix_parsed) || !include)
+            .filter(|t| !t.0.starts_with(&exclude_prefix_parse) || !exclude)
             .filter(|t| !is_internal_topic(t.0) || !exclude_internal)
             .filter(|t| match &user_regex {
                 None => true,
                 Some(re) => re.is_match(t.0),
             })
+            .filter(|t| match &name {
+                None => true,
+                Some(name) => t.0 == name
+            })
             .collect::<HashMap<_, _>>();
+
+        if topics.is_empty() {
+            Err(Report::new(ReadOnlyTopicError::NotExists(filters)))?
+        }
         
         let resources = topics
             .keys()

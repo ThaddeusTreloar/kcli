@@ -1,11 +1,7 @@
 use clap::Args;
-use error_stack::{Report, ResultExt};
+use error_stack::Report;
 
-use crate::{
-    cli::Invoke,
-    config::{ConfigFile, Context},
-    error::cli::config::cluster::WritableClusterError,
-};
+use crate::{cli::Invoke, config::Context, error::cli::config::cluster::WritableClusterError};
 
 #[derive(Debug, Args)]
 pub(super) struct DefaultCluster {
@@ -16,7 +12,7 @@ pub(super) struct DefaultCluster {
 impl Invoke for DefaultCluster {
     type E = WritableClusterError;
 
-    fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), WritableClusterError> {
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), WritableClusterError> {
         let Self { name } = self;
 
         let name = match name {

@@ -11,7 +11,7 @@ pub(super) struct CreateTopic {
 impl Invoke for CreateTopic {
     type E = WriteableTopicError;
 
-    fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), WriteableTopicError> {
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), WriteableTopicError> {
         Ok(())
     }
 }

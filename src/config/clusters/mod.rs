@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::Read};
+use std::collections::HashMap;
 
 use auth::AuthType;
 use error_stack::{Report, ResultExt};

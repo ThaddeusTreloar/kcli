@@ -34,7 +34,7 @@ pub(super) struct ListTopics {
 impl Invoke for ListTopics {
     type E = ReadOnlyTopicError;
 
-    fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), ReadOnlyTopicError> {
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), ReadOnlyTopicError> {
         let Self {
             mut cluster,
             exclude_prefix,

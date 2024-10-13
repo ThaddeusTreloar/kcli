@@ -18,7 +18,7 @@ pub enum ReadOnlyTopicError {
     CreateAdminClient,
     #[error("Error while calling admin client.")]
     AdminClient,
-    #[error("Topic does not exist: {0}")]
+    #[error("No topics match search parameters, {0}")]
     NotExists(String),
     #[error("Error while writing output.")]
     Output,

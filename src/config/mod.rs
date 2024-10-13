@@ -9,7 +9,7 @@ use std::{
 
 use clusters::ClustersConfig;
 use log::info;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 use topics::TopicsConfig;
 
 use crate::error::config::{clusters::ConfigIoError, InitContextError, PathError};

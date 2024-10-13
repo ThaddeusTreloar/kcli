@@ -5,7 +5,7 @@ use crate::{
     cli::Invoke,
     config::{
         clusters::auth::{AuthType, AuthTypeNames},
-        ConfigFile, Context, FromUserInputForVariant,
+        Context, FromUserInputForVariant,
     },
     error::cli::config::cluster::WritableClusterError,
 };
@@ -25,7 +25,7 @@ pub(super) struct SetCluster {
 impl Invoke for SetCluster {
     type E = WritableClusterError;
 
-    fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), WritableClusterError> {
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), WritableClusterError> {
         let Self {
             name,
             bootstrap_servers,

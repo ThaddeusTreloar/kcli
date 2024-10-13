@@ -6,7 +6,7 @@ use crate::{
         util::{get_user_choice, get_user_input_confirmation},
         Invoke,
     },
-    config::{ConfigFile, Context},
+    config::Context,
     error::cli::config::cluster::WritableClusterError,
 };
 
@@ -22,7 +22,7 @@ pub(super) struct RemoveCluster {
 impl Invoke for RemoveCluster {
     type E = WritableClusterError;
 
-    fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), WritableClusterError> {
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), WritableClusterError> {
         let Self { name } = self;
 
         let name = match name {

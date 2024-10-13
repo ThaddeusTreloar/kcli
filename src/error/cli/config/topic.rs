@@ -24,4 +24,6 @@ pub enum ReadOnlyTopicError {
     Output,
     #[error("Invalid input: {0}")]
     InvalidInput(String),
+    #[error("Failed to compile regex: {0}")]
+    CompileRegex(String),
 }

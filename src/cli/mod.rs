@@ -83,13 +83,13 @@ kafka-verifiable-producer.sh
 pub trait Invoke {
     type E: std::error::Error;
 
-    fn invoke(self, ctx: Context) -> error_stack::Result<(), Self::E>;
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), Self::E>;
 }
 
 impl Invoke for Cli {
     type E = ExecutionError;
 
-    fn invoke(self, ctx: Context) -> error_stack::Result<(), ExecutionError> {
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), ExecutionError> {
         match self.command {
             RootCommand::Acl(command) => command.execute(),
             RootCommand::Config(command) => command.invoke(ctx),
@@ -98,7 +98,7 @@ impl Invoke for Cli {
                 .change_context(ExecutionError::ExecutionFailed("consume")),
             RootCommand::Group(command) => command.execute(),
             RootCommand::Produce(command) => command.execute(),
-            RootCommand::Topic(command) => command.execute(),
+            RootCommand::Topic(command) => command.invoke(ctx),
             RootCommand::Completions(command) => command.execute(),
         }
     }

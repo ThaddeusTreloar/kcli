@@ -15,7 +15,7 @@ mod util;
 fn main() {
     init_logging();
 
-    let ctx = match Context::init() {
+    let mut ctx = match Context::init() {
         Ok(ctx) => ctx,
         Err(e) => {
             handle_expect_report(&e);
@@ -23,5 +23,9 @@ fn main() {
         }
     };
 
-    let _ = Cli::parse().invoke(ctx).inspect_err(handle_expect_report);
+    let _ = Cli::parse()
+        .invoke(&mut ctx)
+        .inspect_err(handle_expect_report);
+
+    let _ = ctx.write_out().inspect_err(handle_expect_report);
 }

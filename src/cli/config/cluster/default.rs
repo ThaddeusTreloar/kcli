@@ -16,7 +16,7 @@ pub(super) struct DefaultCluster {
 impl Invoke for DefaultCluster {
     type E = WritableClusterError;
 
-    fn invoke(self, mut ctx: Context) -> error_stack::Result<(), WritableClusterError> {
+    fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), WritableClusterError> {
         let Self { name } = self;
 
         let name = match name {
@@ -35,10 +35,6 @@ impl Invoke for DefaultCluster {
             Err(Report::new(WritableClusterError::NotExists(name)))
         } else {
             ctx.clusters_mut().set_default(&name);
-
-            ctx.clusters()
-                .write_out()
-                .change_context(WritableClusterError::WriteError)?;
 
             println!("Set '{}' as default cluster.", name);
 

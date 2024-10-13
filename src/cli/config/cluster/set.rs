@@ -25,7 +25,7 @@ pub(super) struct SetCluster {
 impl Invoke for SetCluster {
     type E = WritableClusterError;
 
-    fn invoke(self, mut ctx: Context) -> error_stack::Result<(), WritableClusterError> {
+    fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), WritableClusterError> {
         let Self {
             name,
             bootstrap_servers,
@@ -51,8 +51,6 @@ impl Invoke for SetCluster {
             cluster.auth_mut().replace(user_auth);
         }
 
-        ctx.clusters()
-            .write_out()
-            .change_context(WritableClusterError::WriteError)
+        Ok(())
     }
 }

@@ -23,7 +23,7 @@ pub(super) struct DescribeCluster {
 impl Invoke for DescribeCluster {
     type E = ReadOnlyClusterError;
 
-    fn invoke(self, ctx: Context) -> error_stack::Result<(), ReadOnlyClusterError> {
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), ReadOnlyClusterError> {
         let Self { name, out } = self;
 
         let name = match name {

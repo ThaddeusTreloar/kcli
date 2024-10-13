@@ -30,7 +30,7 @@ enum ConfigSubCommand {
 impl Invoke for ConfigCommand {
     type E = ExecutionError;
 
-    fn invoke(self, ctx: Context) -> error_stack::Result<(), ExecutionError> {
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), ExecutionError> {
         match self.command {
             ConfigSubCommand::Cluster(command) => command.invoke(ctx),
             ConfigSubCommand::Registry(_) => todo!("Profile"),

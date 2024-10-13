@@ -21,7 +21,7 @@ pub(super) struct ListCluster {
 impl Invoke for ListCluster {
     type E = ReadOnlyClusterError;
 
-    fn invoke(self, ctx: Context) -> error_stack::Result<(), ReadOnlyClusterError> {
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), ReadOnlyClusterError> {
         let Self { out } = self;
 
         let clusters = ctx.clusters().list_clusters();

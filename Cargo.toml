@@ -4,12 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+chrono = "0.4.38"
 clap = { version = "4.5.13", features = ["derive"] }
 clap_complete = "4.5.33"
 dirs = "5.0.1"
 error-stack = { version = "0.5.0", features = ["anyhow"] }
-inquire = "0.7.5"
+inquire = { version = "0.7.5", features = ["editor"] }
 log = "0.4.22"
+ratatui = "0.28.1"
 rdkafka = { version = "0.36.2", features = ["libz"], default-features = false}
 ron = "0.8.1"
 serde = { version = "1.0.210", features = ["derive"] }

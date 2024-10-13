@@ -6,7 +6,6 @@ use rdkafka::{
     consumer::{BaseConsumer, Consumer},
     ClientConfig, Message,
 };
-use uuid::Uuid;
 
 use crate::{
     cli::util::get_user_choice,
@@ -15,12 +14,11 @@ use crate::{
         ConfigFile, Context,
     },
     error::cli::consume::ConsumerError,
-    io::{output::Output, serde::Serde},
+    io::serde::Serde,
 };
 
-use super::{util::get_user_input_confirmation, Invoke};
+use super::Invoke;
 
-const SELECT_CLUSTER_PROMPT: &str = "Select cluster";
 const REUSE_EXISTING_TOPIC_CONFIG: &str = "Found existing topic config, do you want to reuse?";
 
 #[derive(Args, Debug)]
@@ -42,7 +40,7 @@ pub(super) struct ConsumerCommand {
 impl Invoke for ConsumerCommand {
     type E = ConsumerError;
 
-    fn invoke(self, mut ctx: Context) -> error_stack::Result<(), ConsumerError> {
+    fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), ConsumerError> {
         let Self {
             topic,
             cluster,
@@ -90,36 +88,14 @@ impl Invoke for ConsumerCommand {
             .write_out()
             .change_context(ConsumerError::WriteConfig("topics"))?;
 
-        let cluster = match cluster {
-            Some(cluster_name) => ctx
-                .clusters_mut()
-                .cluster_config_mut(&cluster_name)
-                .ok_or(Report::new(ConsumerError::ClusterNotExists(cluster_name)))?,
-            None => {
-                if ctx.clusters().default().is_some() {
-                    ctx.clusters_mut()
-                        .get_default_mut()
-                        .expect("Unexpected error while fetching default cluster.")
-                } else {
-                    warn!("No default cluster set, and no cluster provided.");
-
-                    let choices = ctx.clusters().list_clusters();
-
-                    if choices.is_empty() {
-                        Err(ConsumerError::ClusterNotExists(
-                            "No cluster provided, and no clusters available.".to_owned(),
-                        ))?
-                    }
-
-                    let choice = get_user_choice(SELECT_CLUSTER_PROMPT, choices)
-                        .change_context(ConsumerError::InputError("cluster choice"))?
-                        .clone();
-
-                    ctx.clusters_mut()
-                        .cluster_config_mut(&choice)
-                        .expect("Unexpected error.")
-                }
-            }
+        let cluster = if let Some(cluster_name) = cluster {
+            ctx.clusters()
+                .cluster_config(&cluster_name)
+                .ok_or(ConsumerError::ClusterNotExists(cluster_name))?
+        } else {
+            ctx.clusters()
+                .cluster_config_default_or_select()
+                .change_context(ConsumerError::FetchDefaultOrSelect)?
         };
 
         let consumer = ClientConfig::new()

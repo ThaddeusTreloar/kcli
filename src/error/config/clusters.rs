@@ -7,3 +7,13 @@ pub enum ConfigIoError {
     #[error("Failed to parse config file.")]
     Parse,
 }
+
+#[derive(Debug, thiserror::Error)]
+pub enum FetchClusterError {
+    #[error("Failed to get user input.")]
+    Input,
+    #[error("Cluster does not exist: {0}")]
+    NotExists(String),
+    #[error("No clusters in config.")]
+    NoClusters,
+}

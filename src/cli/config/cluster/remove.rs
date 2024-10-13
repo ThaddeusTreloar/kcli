@@ -22,7 +22,7 @@ pub(super) struct RemoveCluster {
 impl Invoke for RemoveCluster {
     type E = WritableClusterError;
 
-    fn invoke(self, mut ctx: Context) -> error_stack::Result<(), WritableClusterError> {
+    fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), WritableClusterError> {
         let Self { name } = self;
 
         let name = match name {
@@ -66,9 +66,7 @@ impl Invoke for RemoveCluster {
 
             ctx.clusters_mut().remove_cluster_config(&name);
 
-            ctx.clusters()
-                .write_out()
-                .change_context(WritableClusterError::WriteError)
+            Ok(())
         }
     }
 }

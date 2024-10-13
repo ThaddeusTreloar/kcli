@@ -13,7 +13,7 @@ use crate::{
         },
         ConfigFile, Context, FromUserInputForVariant,
     },
-    error::cli::config::cluster::{AddClusterError, WritableClusterError},
+    error::cli::config::cluster::AddClusterError,
 };
 
 use super::util::validate_servers;
@@ -36,7 +36,7 @@ pub(super) struct AddCluster {
 impl Invoke for AddCluster {
     type E = AddClusterError;
 
-    fn invoke(self, mut ctx: Context) -> error_stack::Result<(), AddClusterError> {
+    fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), AddClusterError> {
         let Self {
             name,
             mut bootstrap_servers,
@@ -85,8 +85,6 @@ impl Invoke for AddCluster {
             }
         }
 
-        ctx.clusters()
-            .write_out()
-            .change_context(AddClusterError::WriteError)
+        Ok(())
     }
 }

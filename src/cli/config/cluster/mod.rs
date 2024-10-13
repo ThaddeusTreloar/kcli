@@ -42,7 +42,7 @@ enum ClusterSubCommand {
 impl Invoke for ClusterCommand {
     type E = ExecutionError;
 
-    fn invoke(self, ctx: Context) -> error_stack::Result<(), ExecutionError> {
+    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), ExecutionError> {
         match self.command {
             ClusterSubCommand::Add(command) => command
                 .invoke(ctx)

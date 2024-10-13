@@ -1,17 +1,21 @@
 use std::{collections::HashMap, io::Read};
 
 use auth::AuthType;
-use error_stack::ResultExt;
+use error_stack::{Report, ResultExt};
 use log::warn;
 use serde::{Deserialize, Serialize};
 
-use crate::error::config::clusters::ConfigIoError;
+use crate::{
+    cli::util::get_user_choice,
+    error::config::clusters::{ConfigIoError, FetchClusterError},
+};
 
 use super::ConfigFile;
 
 pub mod auth;
 
 pub(super) const CLUSTER_CONFIG_FILE: &str = "clusters.toml";
+const SELECT_CLUSTER_PROMPT: &str = "Select cluster";
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClustersConfig {
@@ -51,7 +55,7 @@ impl ClustersConfig {
     }
 
     pub fn set_default(&mut self, cluster: &str) {
-        self.default.replace(cluster.to_owned());
+        self.default.replace(cluster.to_lowercase());
     }
 
     pub fn unset_default(&mut self) {
@@ -63,19 +67,20 @@ impl ClustersConfig {
     }
 
     pub fn cluster_config(&self, cluster: &str) -> Option<&ClusterConfig> {
-        self.cluster_configs.get(cluster)
+        self.cluster_configs.get(cluster.to_lowercase().as_str())
     }
 
     pub fn cluster_config_mut(&mut self, cluster: &str) -> Option<&mut ClusterConfig> {
-        self.cluster_configs.get_mut(cluster)
+        self.cluster_configs
+            .get_mut(cluster.to_lowercase().as_str())
     }
 
     pub fn insert_cluster_config(&mut self, name: &str, cluster: ClusterConfig) {
-        self.cluster_configs.insert(name.to_owned(), cluster);
+        self.cluster_configs.insert(name.to_lowercase(), cluster);
     }
 
     pub fn remove_cluster_config(&mut self, name: &str) {
-        self.cluster_configs.remove(name);
+        self.cluster_configs.remove(name.to_lowercase().as_str());
 
         if let Some(default) = self.default() {
             if default == name {
@@ -86,6 +91,34 @@ impl ClustersConfig {
 
     pub fn contains_cluster_config(&self, cluster: &str) -> bool {
         self.cluster_configs.contains_key(cluster)
+    }
+
+    pub fn cluster_config_default_or_select(
+        &self,
+    ) -> error_stack::Result<&ClusterConfig, FetchClusterError> {
+        if self.default().is_some() {
+            let maybe_cluster = self.get_default();
+
+            debug_assert!(maybe_cluster.is_some());
+
+            maybe_cluster.ok_or(Report::new(FetchClusterError::NotExists("".to_owned())))
+        } else {
+            warn!("No default cluster set, and no cluster provided.");
+
+            let choices = self.list_clusters();
+
+            if choices.is_empty() {
+                Err(FetchClusterError::NoClusters)?
+            }
+
+            let choice = get_user_choice(SELECT_CLUSTER_PROMPT, choices)
+                .change_context(FetchClusterError::Input)?
+                .clone();
+
+            Ok(self
+                .cluster_config(&choice)
+                .expect("Failed to get cluster from list cluster choices."))
+        }
     }
 }
 

@@ -26,6 +26,13 @@ pub struct Context {
 }
 
 impl Context {
+    pub fn write_out(&self) -> error_stack::Result<(), ConfigIoError> {
+        self.clusters.write_out()?;
+        self.topics.write_out()?;
+
+        Ok(())
+    }
+
     pub fn init() -> error_stack::Result<Self, InitContextError> {
         let home_path = home_dir()
             .ok_or(InitContextError::CreateDirectory("~/.kafkacli".to_owned()))

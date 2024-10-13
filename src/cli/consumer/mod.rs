@@ -10,6 +10,7 @@ use rdkafka::{
 use crate::{
     cli::util::get_user_choice,
     config::{
+        clusters::NamedCluster,
         topics::{reset::ResetStrategy, TopicConfig},
         ConfigFile, Context,
     },
@@ -93,9 +94,12 @@ impl Invoke for ConsumerCommand {
                 .cluster_config(&cluster_name)
                 .ok_or(ConsumerError::ClusterNotExists(cluster_name))?
         } else {
-            ctx.clusters()
+            let NamedCluster(_, cluster) = ctx
+                .clusters()
                 .cluster_config_default_or_select()
-                .change_context(ConsumerError::FetchDefaultOrSelect)?
+                .change_context(ConsumerError::FetchDefaultOrSelect)?;
+
+            cluster
         };
 
         let consumer = ClientConfig::new()

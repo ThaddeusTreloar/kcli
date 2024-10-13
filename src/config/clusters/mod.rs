@@ -17,6 +17,8 @@ pub mod auth;
 pub(super) const CLUSTER_CONFIG_FILE: &str = "clusters.toml";
 const SELECT_CLUSTER_PROMPT: &str = "Select cluster";
 
+pub struct NamedCluster<'a>(pub String, pub &'a ClusterConfig);
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClustersConfig {
     default: Option<String>,
@@ -95,13 +97,16 @@ impl ClustersConfig {
 
     pub fn cluster_config_default_or_select(
         &self,
-    ) -> error_stack::Result<&ClusterConfig, FetchClusterError> {
+    ) -> error_stack::Result<NamedCluster<'_>, FetchClusterError> {
         if self.default().is_some() {
             let maybe_cluster = self.get_default();
 
             debug_assert!(maybe_cluster.is_some());
 
-            maybe_cluster.ok_or(Report::new(FetchClusterError::NotExists("".to_owned())))
+            Ok(NamedCluster(
+                self.default().unwrap().to_owned(),
+                maybe_cluster.ok_or(Report::new(FetchClusterError::NotExists("".to_owned())))?,
+            ))
         } else {
             warn!("No default cluster set, and no cluster provided.");
 
@@ -115,9 +120,11 @@ impl ClustersConfig {
                 .change_context(FetchClusterError::Input)?
                 .clone();
 
-            Ok(self
-                .cluster_config(&choice)
-                .expect("Failed to get cluster from list cluster choices."))
+            Ok(NamedCluster(
+                choice.clone(),
+                self.cluster_config(&choice)
+                    .expect("Failed to get cluster from list cluster choices."),
+            ))
         }
     }
 }

@@ -16,6 +16,9 @@ mod delete;
 mod describe;
 mod list;
 
+const INTERNAL_TOPIC_REGEX: &str =
+    r"^__consumer_offsets$|^__transaction_state$|^__share_group_state$|^__cluster_metadata$";
+
 #[derive(Args, Debug)]
 pub(super) struct TopicCommand {
     #[command(subcommand)]

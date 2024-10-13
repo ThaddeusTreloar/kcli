@@ -17,7 +17,7 @@ use crate::error::config::{clusters::ConfigIoError, InitContextError, PathError}
 pub mod clusters;
 pub mod topics;
 
-const CONFIG_HOME: &str = ".kafkacli";
+const CONFIG_HOME: &str = ".kcli";
 
 #[derive(Debug)]
 pub struct Context {

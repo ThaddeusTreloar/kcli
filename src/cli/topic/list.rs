@@ -6,11 +6,16 @@ use rdkafka::{
     admin::AdminClient, client::DefaultClientContext, config::RDKafkaLogLevel, ClientConfig,
 };
 use regex::Regex;
+use tabled::{
+    builder::Builder,
+    settings::{Panel, Style},
+};
 
-use crate::{cli::Invoke, config::Context, error::cli::config::topic::ReadOnlyTopicError};
-
-const INTERNAL_TOPIC_REGEX: &str =
-    r"^__consumer_offsets$|^__transaction_state$|^__share_group_state$|^__cluster_metadata$";
+use crate::{
+    cli::{topic::INTERNAL_TOPIC_REGEX, Invoke},
+    config::{clusters::NamedCluster, Context},
+    error::cli::config::topic::ReadOnlyTopicError,
+};
 
 #[derive(Debug, Args)]
 pub(super) struct ListTopics {
@@ -31,25 +36,33 @@ impl Invoke for ListTopics {
 
     fn invoke(self, mut ctx: &mut Context) -> error_stack::Result<(), ReadOnlyTopicError> {
         let Self {
-            cluster,
+            mut cluster,
             exclude_prefix,
             include_prefix,
             regex,
             exclude_internal,
         } = self;
 
-        let cluster = if let Some(cluster_name) = cluster {
-            ctx.clusters()
-                .cluster_config(&cluster_name)
-                .ok_or(ReadOnlyTopicError::ClusterNotExists(cluster_name))?
+        let cluster_config = if let Some(cluster_name) = &cluster {
+            ctx.clusters().cluster_config(cluster_name).ok_or(
+                ReadOnlyTopicError::ClusterNotExists(cluster_name.to_owned()),
+            )?
         } else {
-            ctx.clusters()
+            let NamedCluster(name, cluster_config) = ctx
+                .clusters()
                 .cluster_config_default_or_select()
-                .change_context(ReadOnlyTopicError::FetchDefaultOrSelect)?
+                .change_context(ReadOnlyTopicError::FetchDefaultOrSelect)?;
+
+            cluster.replace(name);
+
+            cluster_config
         };
 
         let admin_client = ClientConfig::new()
-            .set("bootstrap.servers", cluster.bootstrap_servers().join(","))
+            .set(
+                "bootstrap.servers",
+                cluster_config.bootstrap_servers().join(","),
+            )
             .set_log_level(RDKafkaLogLevel::Emerg)
             .create::<AdminClient<DefaultClientContext>>()
             .change_context(ReadOnlyTopicError::AdminClient)?;
@@ -75,6 +88,8 @@ impl Invoke for ListTopics {
             Some(s) => Some(Regex::new(&s).change_context(ReadOnlyTopicError::CompileRegex(s))?),
         };
 
+        let mut table_builder = Builder::default();
+
         metadata
             .topics()
             .iter()
@@ -86,7 +101,27 @@ impl Invoke for ListTopics {
                 None => true,
                 Some(re) => re.is_match(t),
             })
-            .for_each(|topic| println!("{}", topic));
+            .for_each(|t| table_builder.push_record(vec![t]));
+
+        let mut table = table_builder.build();
+
+        let count = table.count_rows();
+        let width = table.total_width();
+        let seperator = (0..width).map(|_| "-").collect::<String>();
+
+        table
+            .with(Style::rounded())
+            .with(Panel::horizontal(count, seperator))
+            .with(Panel::header("topic"))
+            .with(Panel::footer(format!(
+                "Count: {}, Cluster: {}",
+                count,
+                cluster.as_ref().unwrap()
+            )))
+            .get_config();
+        table.count_rows();
+
+        println!("{}", table);
 
         Ok(())
     }

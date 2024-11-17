@@ -2,34 +2,31 @@ use clap::Args;
 use error_stack::{Report, ResultExt};
 
 use crate::{
-    cli::Invoke, config::Context, error::cli::config::cluster::ReadOnlyClusterError,
-    io::output::Output,
+    cli::{GlobalArgs, Invoke},
+    config::Context,
+    error::cli::config::cluster::ReadOnlyClusterError,
 };
 
 #[derive(Debug, Args)]
 pub(super) struct DescribeCluster {
     #[arg(index = 1, help = "Logical name for the cluster.")]
     name: Option<String>,
-    #[arg(
-        short,
-        long,
-        global = true,
-        default_value_t,
-        help = "Output format for commands."
-    )]
-    out: Output,
 }
 
 impl Invoke for DescribeCluster {
     type E = ReadOnlyClusterError;
 
-    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), ReadOnlyClusterError> {
-        let Self { name, out } = self;
+    fn invoke(
+        self,
+        ctx: &mut Context,
+        global_args: &GlobalArgs,
+    ) -> error_stack::Result<(), ReadOnlyClusterError> {
+        let Self { name } = self;
 
         let name = match name {
             Some(name) => name,
             None => ctx
-                .clusters()
+                .clusters
                 .default()
                 .ok_or(ReadOnlyClusterError::InvalidInput(
                     "No cluster specified, and no default cluster set.".to_owned(),
@@ -38,12 +35,13 @@ impl Invoke for DescribeCluster {
         };
 
         let cluster = ctx
-            .clusters()
+            .clusters
             .cluster_config(&name)
             .ok_or(Report::new(ReadOnlyClusterError::NotExists(name)))?;
 
-        let display = out
-            .write_as_string(cluster)
+        let display = global_args
+            .out
+            .output_string(cluster)
             .change_context(ReadOnlyClusterError::Output)?;
 
         println!("{}", display);

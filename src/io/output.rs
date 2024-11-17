@@ -16,7 +16,7 @@ pub enum Output {
 }
 
 impl Output {
-    pub fn write_as_string<T>(&self, value: &T) -> error_stack::Result<String, OutputError>
+    pub fn output_string<T>(&self, value: &T) -> error_stack::Result<String, OutputError>
     where
         T: Serialize,
     {

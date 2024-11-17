@@ -1,3 +1,5 @@
+use std::process::exit;
+
 use acl::AclCommand;
 use clap::{Parser, Subcommand};
 use completions::CompletionsCommand;
@@ -6,9 +8,15 @@ use consumer::ConsumerCommand;
 use error_stack::ResultExt;
 use group::GroupCommand;
 use producer::ProducerCommand;
+use simplelog::LevelFilter;
 use topic::TopicCommand;
 
-use crate::{config::Context, error::cli::ExecutionError, io::output::Output};
+use crate::{
+    config::Context,
+    error::{cli::ExecutionError, handle_expect_report},
+    io::output::Output,
+    util::init_logging,
+};
 
 mod acl;
 mod completions;
@@ -83,23 +91,57 @@ kafka-verifiable-producer.sh
 pub trait Invoke {
     type E: std::error::Error;
 
-    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), Self::E>;
+    fn invoke(
+        self,
+        ctx: &mut Context,
+        global_args: &GlobalArgs,
+    ) -> error_stack::Result<(), Self::E>;
 }
 
-impl Invoke for Cli {
-    type E = ExecutionError;
+impl Cli {
+    pub fn invoke_root(self) {
+        let Self {
+            command,
+            verbose,
+            out,
+        } = self;
 
-    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), ExecutionError> {
-        match self.command {
+        let log_level = if verbose {
+            LevelFilter::Info
+        } else {
+            LevelFilter::Error
+        };
+
+        init_logging(log_level);
+
+        let mut ctx = match Context::init() {
+            Ok(ctx) => ctx,
+            Err(e) => {
+                handle_expect_report(&e);
+                exit(1);
+            }
+        };
+
+        let global_args = GlobalArgs { out };
+
+        match command {
             RootCommand::Acl(command) => command.execute(),
-            RootCommand::Config(command) => command.invoke(ctx),
+            RootCommand::Config(command) => command.invoke(&mut ctx, &global_args),
             RootCommand::Consume(command) => command
-                .invoke(ctx)
+                .invoke(&mut ctx, &global_args)
                 .change_context(ExecutionError::ExecutionFailed("consume")),
             RootCommand::Group(command) => command.execute(),
             RootCommand::Produce(command) => command.execute(),
-            RootCommand::Topic(command) => command.invoke(ctx),
+            RootCommand::Topic(command) => command.invoke(&mut ctx, &global_args),
             RootCommand::Completions(command) => command.execute(),
         }
+        .inspect_err(handle_expect_report);
+
+        ctx.write_out().inspect_err(handle_expect_report);
     }
+}
+
+#[derive(Debug, Default)]
+pub struct GlobalArgs {
+    pub out: Output,
 }

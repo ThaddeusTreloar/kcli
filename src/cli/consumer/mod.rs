@@ -6,18 +6,18 @@ use rdkafka::{
     consumer::{BaseConsumer, Consumer},
     ClientConfig, Message,
 };
+use uuid::Uuid;
 
 use crate::{
     config::{
-        clusters::NamedCluster,
-        topics::{reset::ResetStrategy, TopicConfig},
-        ConfigFile, Context,
+        clusters::NamedCluster, profiles::reset::ResetStrategy, topics::TopicConfig, ConfigFile,
+        Context,
     },
     error::cli::consume::ConsumerError,
     io::serde::Serde,
 };
 
-use super::Invoke;
+use super::{GlobalArgs, Invoke};
 
 const _REUSE_EXISTING_TOPIC_CONFIG: &str = "Found existing topic config, do you want to reuse?";
 
@@ -25,6 +25,8 @@ const _REUSE_EXISTING_TOPIC_CONFIG: &str = "Found existing topic config, do you 
 pub(super) struct ConsumerCommand {
     #[arg(index = 1, help = "Topic to consume from.")]
     topic: String,
+    #[arg(short, long, help = "Profile to use.")]
+    profile: Option<String>,
     #[arg(short, long, help = "Target cluster to consumer from.")]
     cluster: Option<String>,
     #[arg(short, long, help = "Reset strategy to use when consuming.")]
@@ -40,32 +42,47 @@ pub(super) struct ConsumerCommand {
 impl Invoke for ConsumerCommand {
     type E = ConsumerError;
 
-    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), ConsumerError> {
+    fn invoke(
+        self,
+        ctx: &mut Context,
+        global_args: &GlobalArgs,
+    ) -> error_stack::Result<(), ConsumerError> {
         let Self {
             topic,
+            profile,
             cluster,
-            reset,
-            group,
+            mut reset,
+            mut group,
             key_serde,
             value_serde,
         } = self;
 
-        let topic_config = match ctx.topics_mut().topic_mut(&topic) {
+        let profile = profile
+            .or_else(|| {
+                ctx.topics
+                    .topic(&topic)
+                    .and_then(|p| p.default_profile().cloned())
+            })
+            .and_then(|p| ctx.profiles.profile(&p));
+
+        let reset_strategy = reset
+            .or_else(|| profile.map(|p| p.reset))
+            .unwrap_or_default();
+
+        let group_id = group
+            .or_else(|| profile.map(|p| p.group_id()))
+            .unwrap_or(Uuid::new_v4().to_string());
+
+        let topic_config = match ctx.topics.topic_mut(&topic) {
             Some(topic) => {
                 trace!("Using existing topic.");
 
-                topic.set_group(group.into());
-
-                if let Some(reset) = reset {
-                    topic.set_reset(reset);
-                }
-
                 if let Some(key_serde) = key_serde {
-                    topic.set_key_serde(key_serde);
+                    topic.key_serde = key_serde;
                 }
 
                 if let Some(value_serde) = value_serde {
-                    topic.set_value_serde(value_serde);
+                    topic.value_serde = value_serde;
                 }
 
                 topic.clone()
@@ -73,28 +90,26 @@ impl Invoke for ConsumerCommand {
             None => {
                 let mut config = TopicConfig::default();
 
-                config.set_group(group.into());
-                config.set_reset(reset.unwrap_or_default());
-                config.set_key_serde(key_serde.unwrap_or_default());
-                config.set_value_serde(value_serde.unwrap_or_default());
+                config.key_serde = key_serde.unwrap_or_default();
+                config.value_serde = value_serde.unwrap_or_default();
 
-                ctx.topics_mut().add_topic(&topic, config.clone());
+                ctx.topics.add_topic(&topic, config.clone());
 
                 config
             }
         };
 
-        ctx.topics()
+        ctx.topics
             .write_out()
             .change_context(ConsumerError::WriteConfig("topics"))?;
 
         let cluster = if let Some(cluster_name) = cluster {
-            ctx.clusters()
+            ctx.clusters
                 .cluster_config(&cluster_name)
                 .ok_or(ConsumerError::ClusterNotExists(cluster_name))?
         } else {
             let NamedCluster(_, cluster) = ctx
-                .clusters()
+                .clusters
                 .cluster_config_default_or_select()
                 .change_context(ConsumerError::FetchDefaultOrSelect)?;
 
@@ -102,9 +117,9 @@ impl Invoke for ConsumerCommand {
         };
 
         let consumer = ClientConfig::new()
-            .set("group.id", topic_config.group_id())
-            .set("bootstrap.servers", cluster.bootstrap_servers().join(","))
-            .set("auto.offset.reset", topic_config.reset_string())
+            .set("group.id", group_id)
+            .set("bootstrap.servers", cluster.bootstrap_servers.join(","))
+            .set("auto.offset.reset", reset_strategy.to_string())
             .set_log_level(RDKafkaLogLevel::Emerg)
             .create::<BaseConsumer>()
             .change_context(ConsumerError::CreateConsumer)?;
@@ -121,7 +136,7 @@ impl Invoke for ConsumerCommand {
                 Ok(message) => {
                     let key_display = match message.key() {
                         Some(bytes) => topic_config
-                            .key_serde()
+                            .key_serde
                             .deserialise_into_string(bytes.to_owned())
                             .change_context(ConsumerError::KeyDeserialisationFailure)?,
                         None => "None".to_owned(),
@@ -129,7 +144,7 @@ impl Invoke for ConsumerCommand {
 
                     let value_display = match message.payload() {
                         Some(bytes) => topic_config
-                            .value_serde()
+                            .value_serde
                             .deserialise_into_string(bytes.to_owned())
                             .change_context(ConsumerError::KeyDeserialisationFailure)?,
                         None => "None".to_owned(),

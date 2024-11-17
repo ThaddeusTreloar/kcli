@@ -1,22 +1,17 @@
 use std::collections::HashMap;
 
-use group::GroupSetting;
-use reset::ResetStrategy;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::io::serde::Serde;
 
-use super::ConfigFile;
-
-pub mod group;
-pub mod reset;
+use super::{profiles::ProfileConfig, ConfigFile};
 
 pub(super) const TOPIC_CONFIG_FILE: &str = "topics.toml";
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TopicsConfig {
-    topic_configs: HashMap<String, TopicConfig>,
+    pub topic_configs: HashMap<String, TopicConfig>,
 }
 
 impl Default for TopicsConfig {
@@ -61,53 +56,13 @@ impl ConfigFile for TopicsConfig {
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct TopicConfig {
-    reset: ResetStrategy,
-    group: GroupSetting,
-    key_serde: Serde,
-    value_serde: Serde,
+    pub default_profile: Option<String>,
+    pub key_serde: Serde,
+    pub value_serde: Serde,
 }
 
 impl TopicConfig {
-    pub fn reset(&self) -> &ResetStrategy {
-        &self.reset
-    }
-
-    pub fn key_serde(&self) -> &Serde {
-        &self.key_serde
-    }
-
-    pub fn value_serde(&self) -> &Serde {
-        &self.value_serde
-    }
-
-    pub fn reset_string(&self) -> String {
-        self.reset.to_string()
-    }
-
-    pub fn group(&self) -> &GroupSetting {
-        &self.group
-    }
-
-    pub fn set_key_serde(&mut self, serde: Serde) {
-        self.key_serde = serde;
-    }
-
-    pub fn set_value_serde(&mut self, serde: Serde) {
-        self.value_serde = serde;
-    }
-
-    pub fn group_id(&self) -> String {
-        match &self.group {
-            GroupSetting::Never => Uuid::new_v4().to_string(),
-            GroupSetting::Group(group) => group.clone(),
-        }
-    }
-
-    pub fn set_reset(&mut self, reset: ResetStrategy) {
-        self.reset = reset;
-    }
-
-    pub fn set_group(&mut self, group: GroupSetting) {
-        self.group = group;
+    pub fn default_profile(&self) -> Option<&String> {
+        self.default_profile.as_ref()
     }
 }

@@ -4,7 +4,7 @@ use error_stack::{Report, ResultExt};
 use crate::{
     cli::{
         util::{get_user_input_confirmation, get_user_input_vec},
-        Invoke,
+        GlobalArgs, Invoke,
     },
     config::{
         clusters::{
@@ -36,7 +36,11 @@ pub(super) struct AddCluster {
 impl Invoke for AddCluster {
     type E = AddClusterError;
 
-    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), AddClusterError> {
+    fn invoke(
+        self,
+        ctx: &mut Context,
+        global_args: &GlobalArgs,
+    ) -> error_stack::Result<(), AddClusterError> {
         let Self {
             name,
             mut bootstrap_servers,
@@ -44,7 +48,7 @@ impl Invoke for AddCluster {
             auth,
         } = self;
 
-        if ctx.clusters().contains_cluster_config(&name)
+        if ctx.clusters.contains_cluster_config(&name)
             && !get_user_input_confirmation("Cluster config exists, do you want to replace it?")
                 .change_context(AddClusterError::InputError("replace cluster"))?
         {
@@ -71,17 +75,17 @@ impl Invoke for AddCluster {
             let user_auth = AuthType::from_user_input_for_variant(auth_type)
                 .change_context(AddClusterError::InputError("auth"))?;
 
-            cluster.auth_mut().replace(user_auth);
+            cluster.auth.replace(user_auth);
         }
 
-        ctx.clusters_mut().insert_cluster_config(&name, cluster);
+        ctx.clusters.insert_cluster_config(&name, cluster);
 
-        if ctx.clusters().default().is_none() {
+        if ctx.clusters.default().is_none() {
             let confirm = get_user_input_confirmation(SET_DEFAULT_PROMPT)
                 .change_context(AddClusterError::InputError("confirmation"))?;
 
             if confirm {
-                ctx.clusters_mut().set_default(&name);
+                ctx.clusters.set_default(&name);
             }
         }
 

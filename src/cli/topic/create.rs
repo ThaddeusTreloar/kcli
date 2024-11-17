@@ -1,6 +1,10 @@
 use clap::Args;
 
-use crate::{cli::Invoke, config::Context, error::cli::config::topic::WriteableTopicError};
+use crate::{
+    cli::{GlobalArgs, Invoke},
+    config::Context,
+    error::cli::config::topic::WriteableTopicError,
+};
 
 #[derive(Debug, Args)]
 pub(super) struct CreateTopic {
@@ -11,7 +15,11 @@ pub(super) struct CreateTopic {
 impl Invoke for CreateTopic {
     type E = WriteableTopicError;
 
-    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), WriteableTopicError> {
+    fn invoke(
+        self,
+        ctx: &mut Context,
+        global_args: &GlobalArgs,
+    ) -> error_stack::Result<(), WriteableTopicError> {
         Ok(())
     }
 }

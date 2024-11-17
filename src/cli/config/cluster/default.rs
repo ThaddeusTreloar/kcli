@@ -1,7 +1,11 @@
 use clap::Args;
 use error_stack::Report;
 
-use crate::{cli::Invoke, config::Context, error::cli::config::cluster::WritableClusterError};
+use crate::{
+    cli::{GlobalArgs, Invoke},
+    config::Context,
+    error::cli::config::cluster::WritableClusterError,
+};
 
 #[derive(Debug, Args)]
 pub(super) struct DefaultCluster {
@@ -12,13 +16,17 @@ pub(super) struct DefaultCluster {
 impl Invoke for DefaultCluster {
     type E = WritableClusterError;
 
-    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), WritableClusterError> {
+    fn invoke(
+        self,
+        ctx: &mut Context,
+        global_args: &GlobalArgs,
+    ) -> error_stack::Result<(), WritableClusterError> {
         let Self { name } = self;
 
         let name = match name {
             Some(name) => name,
             None => {
-                match ctx.clusters().default() {
+                match ctx.clusters.default() {
                     Some(name) => println!("Default cluster: {}", name),
                     None => println!("No default cluster set."),
                 }
@@ -27,10 +35,10 @@ impl Invoke for DefaultCluster {
             }
         };
 
-        if !ctx.clusters().contains_cluster_config(&name) {
+        if !ctx.clusters.contains_cluster_config(&name) {
             Err(Report::new(WritableClusterError::NotExists(name)))
         } else {
-            ctx.clusters_mut().set_default(&name);
+            ctx.clusters.set_default(&name);
 
             println!("Set '{}' as default cluster.", name);
 

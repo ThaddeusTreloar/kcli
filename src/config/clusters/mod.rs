@@ -153,9 +153,8 @@ impl ConfigFile for ClustersConfig {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ClusterConfig {
-    bootstrap_servers: Vec<String>,
-    auth: Option<AuthType>,
-    topics: Vec<String>,
+    pub bootstrap_servers: Vec<String>,
+    pub auth: Option<AuthType>,
 }
 
 impl ClusterConfig {
@@ -163,39 +162,10 @@ impl ClusterConfig {
         Self {
             bootstrap_servers,
             auth: None,
-            topics: Vec::new(),
         }
-    }
-
-    pub fn bootstrap_servers(&self) -> &[String] {
-        &self.bootstrap_servers
-    }
-
-    pub fn bootstrap_servers_mut(&mut self) -> &mut Vec<String> {
-        &mut self.bootstrap_servers
     }
 
     pub fn auth(&self) -> Option<&AuthType> {
         self.auth.as_ref()
-    }
-
-    pub fn auth_mut(&mut self) -> &mut Option<AuthType> {
-        &mut self.auth
-    }
-
-    pub fn topics(&self) -> &Vec<String> {
-        &self.topics
-    }
-
-    pub fn contains_topic(&self, topic: &String) -> bool {
-        self.topics.contains(topic)
-    }
-
-    pub fn add_topic(&mut self, topic: &str) {
-        self.topics.push(topic.to_owned());
-    }
-
-    pub fn remove_topic(&mut self, topic: &str) {
-        self.topics.push(topic.to_owned());
     }
 }

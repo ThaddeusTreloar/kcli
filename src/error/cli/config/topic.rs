@@ -27,3 +27,15 @@ pub enum ReadOnlyTopicError {
     #[error("Failed to compile regex: {0}")]
     CompileRegex(String),
 }
+
+#[derive(Debug, thiserror::Error)]
+pub enum TopicError {
+    #[error("Topic already exists: {0}")]
+    AlreadyExists(String),
+    #[error("Topic does not exist: {0}")]
+    NotExists(String),
+    #[error("Profile does not exist: {0}")]
+    ProfileNotExists(String),
+    #[error("Default profile not set.")]
+    NotSet,
+}

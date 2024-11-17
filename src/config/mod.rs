@@ -1,5 +1,6 @@
 use dirs::home_dir;
 use error_stack::ResultExt;
+use profiles::ProfilesConfig;
 use std::{
     error::Error,
     fs::{create_dir, exists, File},
@@ -15,19 +16,22 @@ use topics::TopicsConfig;
 use crate::error::config::{clusters::ConfigIoError, InitContextError, PathError};
 
 pub mod clusters;
+pub mod profiles;
 pub mod topics;
 
 const CONFIG_HOME: &str = ".kcli";
 
 #[derive(Debug)]
 pub struct Context {
-    clusters: ClustersConfig,
-    topics: TopicsConfig,
+    pub clusters: ClustersConfig,
+    pub topics: TopicsConfig,
+    pub profiles: ProfilesConfig,
 }
 
 impl Context {
     pub fn write_out(&self) -> error_stack::Result<(), ConfigIoError> {
         self.clusters.write_out()?;
+        self.profiles.write_out()?;
         self.topics.write_out()?;
 
         Ok(())
@@ -63,7 +67,14 @@ impl Context {
         let topics = TopicsConfig::create_if_not_exists()
             .change_context(InitContextError::LoadConfig("topics"))?;
 
-        Ok(Self { clusters, topics })
+        let profiles = ProfilesConfig::create_if_not_exists()
+            .change_context(InitContextError::LoadConfig("profiles"))?;
+
+        Ok(Self {
+            clusters,
+            topics,
+            profiles,
+        })
     }
 
     fn get_path_for_child(child_path: &str) -> error_stack::Result<PathBuf, PathError> {
@@ -75,20 +86,6 @@ impl Context {
         path.push(child_path);
 
         Ok(path)
-    }
-
-    pub fn clusters(&self) -> &ClustersConfig {
-        &self.clusters
-    }
-    pub fn clusters_mut(&mut self) -> &mut ClustersConfig {
-        &mut self.clusters
-    }
-
-    pub fn topics(&self) -> &TopicsConfig {
-        &self.topics
-    }
-    pub fn topics_mut(&mut self) -> &mut TopicsConfig {
-        &mut self.topics
     }
 }
 
@@ -127,7 +124,7 @@ pub trait ConfigFile: Default + DeserializeOwned + Serialize {
             resolved_config_path.display().to_string(),
         ))? {
             info!(
-                "Topic config not found, creating at: {}",
+                "Config not found, creating at: {}",
                 resolved_config_path.display()
             );
 

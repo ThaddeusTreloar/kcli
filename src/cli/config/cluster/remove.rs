@@ -4,7 +4,7 @@ use error_stack::{Report, ResultExt};
 use crate::{
     cli::{
         util::{get_user_choice, get_user_input_confirmation},
-        Invoke,
+        GlobalArgs, Invoke,
     },
     config::Context,
     error::cli::config::cluster::WritableClusterError,
@@ -22,13 +22,17 @@ pub(super) struct RemoveCluster {
 impl Invoke for RemoveCluster {
     type E = WritableClusterError;
 
-    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), WritableClusterError> {
+    fn invoke(
+        self,
+        ctx: &mut Context,
+        global_args: &GlobalArgs,
+    ) -> error_stack::Result<(), WritableClusterError> {
         let Self { name } = self;
 
         let name = match name {
             Some(name) => name,
             None => {
-                let choices = ctx.clusters().list_clusters();
+                let choices = ctx.clusters.list_clusters();
 
                 if choices.is_empty() {
                     Err(Report::new(WritableClusterError::NotExists(
@@ -42,7 +46,7 @@ impl Invoke for RemoveCluster {
             }
         };
 
-        if !ctx.clusters().contains_cluster_config(&name) {
+        if !ctx.clusters.contains_cluster_config(&name) {
             Err(Report::new(WritableClusterError::NotExists(name)))
         } else if !get_user_input_confirmation(&format!(
             "Are you sure you want to remove '{}'?",
@@ -52,7 +56,7 @@ impl Invoke for RemoveCluster {
         {
             Ok(())
         } else {
-            match ctx.clusters().default() {
+            match ctx.clusters.default() {
                 Some(cluster) if cluster == &name => {
                     let confirm = get_user_input_confirmation(REMOVE_DEFAULT_PROMPT)
                         .change_context(WritableClusterError::InputError("confirmation"))?;
@@ -64,7 +68,7 @@ impl Invoke for RemoveCluster {
                 _ => (),
             }
 
-            ctx.clusters_mut().remove_cluster_config(&name);
+            ctx.clusters.remove_cluster_config(&name);
 
             Ok(())
         }

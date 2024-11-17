@@ -8,7 +8,7 @@ use list::ListTopics;
 
 use crate::{config::Context, error::cli::ExecutionError};
 
-use super::Invoke;
+use super::{GlobalArgs, Invoke};
 
 mod alter;
 mod create;
@@ -42,22 +42,26 @@ enum TopicSubCommand {
 impl Invoke for TopicCommand {
     type E = ExecutionError;
 
-    fn invoke(self, ctx: &mut Context) -> error_stack::Result<(), ExecutionError> {
+    fn invoke(
+        self,
+        ctx: &mut Context,
+        global_args: &GlobalArgs,
+    ) -> error_stack::Result<(), ExecutionError> {
         match self.command {
             TopicSubCommand::Alter(command) => command
-                .invoke(ctx)
+                .invoke(ctx, global_args)
                 .change_context(ExecutionError::ExecutionFailed("topic alter")),
             TopicSubCommand::Create(command) => command
-                .invoke(ctx)
+                .invoke(ctx, global_args)
                 .change_context(ExecutionError::ExecutionFailed("topic create")),
             TopicSubCommand::Delete(command) => command
-                .invoke(ctx)
+                .invoke(ctx, global_args)
                 .change_context(ExecutionError::ExecutionFailed("topic delete")),
             TopicSubCommand::Describe(command) => command
-                .invoke(ctx)
+                .invoke(ctx, global_args)
                 .change_context(ExecutionError::ExecutionFailed("topic describe")),
             TopicSubCommand::List(command) => command
-                .invoke(ctx)
+                .invoke(ctx, global_args)
                 .change_context(ExecutionError::ExecutionFailed("topic list")),
         }
     }

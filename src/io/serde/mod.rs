@@ -9,6 +9,7 @@ use crate::error::io::SerdeError;
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum Serde {
+    Avro,
     AvroSchema,
     Int,
     Bytes,
@@ -67,6 +68,7 @@ impl FromStr for Serde {
 impl ValueEnum for Serde {
     fn value_variants<'a>() -> &'a [Self] {
         &[
+            Serde::Avro,
             Serde::AvroSchema,
             Serde::Bytes,
             Serde::Int,
@@ -78,6 +80,7 @@ impl ValueEnum for Serde {
 
     fn to_possible_value(&self) -> Option<PossibleValue> {
         Some(match self {
+            Serde::Avro => PossibleValue::new("avro"),
             Serde::AvroSchema => PossibleValue::new("avro_schema"),
             Serde::Bytes => PossibleValue::new("bytes"),
             Serde::Int => PossibleValue::new("int"),
